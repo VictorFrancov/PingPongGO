@@ -1,36 +1,36 @@
-
 package main
 
 import (
-    "fmt"
-    "sync"
+	"fmt"
+	"time"
 )
 
+func ping(pingCh chan<- bool, pongCh <-chan bool) {
+	for {
+		<-pongCh
+		fmt.Println("ping")
+		time.Sleep(500 * time.Millisecond)
+		pingCh <- true
+	}
+}
+
+func pong(pingCh <-chan bool, pongCh chan<- bool) {
+	for {
+		<-pingCh
+		fmt.Println("pong")
+		time.Sleep(500 * time.Millisecond)
+		pongCh <- true
+	}
+}
+
 func main() {
-    var wg sync.WaitGroup
+	pingCh := make(chan bool)
+	pongCh := make(chan bool)
 
-    pingChannel := make(chan string)
-    pongChannel := make(chan string)
+	go ping(pingCh, pongCh)
+	go pong(pingCh, pongCh)
 
-    wg.Add(2)
+	pongCh <- true
 
-    go func() {
-        for {
-            pingChannel <- "PING"
-            wg.Done()
-        }
-    }()
-
-    go func() {
-        for {
-            <-pongChannel
-            fmt.Println("PING")
-            pingChannel <- "PONG"
-        }
-    }()
-
-    wg.Wait()
-
-    close(pingChannel)
-    close(pongChannel)
+	time.Sleep(10 * time.Second)
 }
